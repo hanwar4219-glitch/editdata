@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تحديث بيانات الدارسين</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--g:#0f5c4a;--g2:#0b4538;--gold:#c9a227;--bg:#f6f1e3;--card:#fff;--tx:#1d2b26;--mut:#6b7a74;--err:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;font-family:Cairo,Tahoma,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+header{background:linear-gradient(135deg,var(--g),var(--g2));color:#fff;text-align:center;padding:26px 16px;border-bottom:4px solid var(--gold)}
+header h1{margin:0 0 4px;font-size:1.4rem;font-weight:800}
+header p{margin:0;opacity:.85;font-size:.95rem}
+main{max-width:520px;margin:20px auto;padding:0 14px}
+.card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 4px 18px rgba(0,0,0,.08)}
+label{display:block;font-weight:600;margin:14px 0 6px}
+input,textarea{width:100%;padding:12px;font:inherit;border:1.5px solid #cfd8d3;border-radius:10px;background:#fff}
+textarea{resize:vertical;min-height:80px}
+input:focus,textarea:focus{outline:none;border-color:var(--g)}
+input[readonly]{background:#eef2ef;color:var(--mut)}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:12px 18px;font-weight:600}
+.btn{width:100%;margin-top:16px;background:var(--g);color:#fff}
+.btn:hover{background:var(--g2)}
+.btn:disabled{opacity:.6}
+.link{background:none;color:var(--g);padding:8px;margin-top:8px;width:100%}
+.err{color:var(--err);margin-top:10px;font-size:.92rem;min-height:1.2em}
+.hint{color:var(--mut);font-size:.86rem;margin-top:6px}
+.note{background:#fff8e1;border:1px solid #ecd58a;border-radius:10px;padding:10px 12px;font-size:.9rem;margin-top:8px}
+.res{display:block;width:100%;text-align:right;background:#f3f7f5;border:1.5px solid #dbe6e0;margin-top:8px;color:var(--tx)}
+.tog{display:flex;gap:8px;margin-top:6px}
+.tog button{flex:1;background:#eef2ef;color:var(--tx)}
+.tog button.on{background:var(--g);color:#fff}
+.ok{text-align:center}
+.ok .ic{font-size:3rem;color:var(--g)}
+.num{direction:ltr;text-align:right}
+.who{background:#f3f7f5;border-radius:10px;padding:12px;font-weight:800;text-align:center}
+</style>
+</head>
+<body>
+<header><h1>تحديث بيانات الدارسين</h1><p>راجع بياناتك وأضف رقم تليفونك</p></header>
+<main>
+
+<section class="card" id="s1">
+  <label for="q">الرقم القومي أو الاسم</label>
+  <input id="q" placeholder="اكتب الرقم القومي (14 رقم) أو اسمك" autocomplete="off">
+  <div class="hint">الأسرع والأدق أن تبحث بالرقم القومي.</div>
+  <button class="btn" id="go">بحث</button>
+  <div class="err" id="e1"></div>
+  <div id="list"></div>
+</section>
+
+<section class="card" id="sv" hidden>
+  <div class="who" id="vname"></div>
+  <label for="dob">اختر تاريخ ميلادك للتأكد من هويتك</label>
+  <input type="date" id="dob" class="num" min="1930-01-01">
+  <div class="err" id="e3"></div>
+  <button class="btn" id="vgo">تأكيد</button>
+  <button class="link" id="vback">رجوع للبحث</button>
+</section>
+
+<section class="card" id="s2" hidden>
+  <div class="tog">
+    <button id="mOk" class="on">بياناتي صحيحة</button>
+    <button id="mErr">يوجد خطأ في بياناتي</button>
+  </div>
+  <label for="fname">الاسم</label>
+  <input id="fname" readonly>
+  <div class="note">الاسم لا يمكن تعديله من هنا. إذا كان به خطأ، اكتب الاسم الصحيح في خانة الملاحظات.</div>
+  <label for="fid">الرقم القومي</label>
+  <input id="fid" class="num" inputmode="numeric" maxlength="14" readonly>
+  <div class="hint" id="idHint" hidden>عدّل الرقم القومي إن كان به خطأ.</div>
+  <label for="phone">رقم التليفون <span style="color:var(--err)">*</span></label>
+  <input id="phone" class="num" inputmode="tel" maxlength="11" placeholder="01xxxxxxxxx">
+  <div class="hint" id="phHint" hidden></div>
+  <label for="notes">ملاحظات (اختياري)</label>
+  <textarea id="notes" maxlength="300" placeholder="مثال: الاسم الصحيح هو ..."></textarea>
+  <div class="err" id="e2"></div>
+  <button class="btn" id="send">إرسال</button>
+  <button class="link" id="back">رجوع للبحث</button>
+</section>
+
+<section class="card ok" id="s3" hidden>
+  <div class="ic">✔</div>
+  <h2 id="okT" style="margin:6px 0"></h2>
+  <p id="okP" style="color:var(--mut)"></p>
+  <button class="btn" id="again">بحث جديد</button>
+</section>
+
+</main>
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbx4SCp1T06Vm4vvY6u2n9d6-YF5HwIkkhaHpC33pL4reW-tJhcKbwtQ8TTgL9mSLrEe9A/exec';
+
+const $ = id => document.getElementById(id);
+const AR = '٠١٢٣٤٥٦٧٨٩';
+const dg = s => String(s || '').replace(/[٠-٩]/g, d => AR.indexOf(d)).replace(/\s/g, '');
+let cur = null, vrec = null, mode = 'ok';
+$('dob').max = new Date().toISOString().slice(0, 10);
+
+function show(id){ ['s1','sv','s2','s3'].forEach(i => $(i).hidden = i !== id); window.scrollTo(0,0); }
+
+async function search(){
+  const q = $('q').value.trim();
+  $('e1').textContent = ''; $('list').innerHTML = '';
+  if(!q){ $('e1').textContent = 'اكتب الرقم القومي أو الاسم'; return; }
+  const b = $('go'); b.disabled = true; b.textContent = 'جارٍ البحث...';
+  try{
+    const j = await (await fetch(API + '?action=search&q=' + encodeURIComponent(q))).json();
+    if(!j.ok){ $('e1').textContent = j.error; return; }
+    if(!j.results.length){ $('e1').textContent = 'لم نجد بياناتك. تأكد من البيانات أو تواصل مع الإدارة.'; return; }
+    if(j.results[0].full){ pick(j.results[0]); return; }
+    j.results.forEach(rec => {
+      const x = document.createElement('button');
+      x.className = 'res';
+      x.textContent = rec.name;
+      x.onclick = () => startVerify(rec);
+      $('list').appendChild(x);
+    });
+  }catch(e){ $('e1').textContent = 'تعذّر الاتصال، حاول مرة أخرى.'; }
+  finally{ b.disabled = false; b.textContent = 'بحث'; }
+}
+
+function startVerify(rec){
+  vrec = rec;
+  $('vname').textContent = rec.name;
+  $('dob').value = ''; $('e3').textContent = '';
+  show('sv');
+}
+
+async function verify(){
+  const dob = $('dob').value;
+  if(!dob){ $('e3').textContent = 'اختر تاريخ ميلادك'; return; }
+  const b = $('vgo'); b.disabled = true; b.textContent = 'جارٍ التحقق...';
+  try{
+    const j = await (await fetch(API + '?action=verify&row=' + vrec.row + '&dob=' + dob)).json();
+    if(!j.ok){ $('e3').textContent = j.error; return; }
+    pick(j.rec);
+  }catch(e){ $('e3').textContent = 'تعذّر الاتصال، حاول مرة أخرى.'; }
+  finally{ b.disabled = false; b.textContent = 'تأكيد'; }
+}
+
+function pick(rec){
+  cur = rec;
+  $('fname').value = rec.name;
+  $('phone').value = ''; $('notes').value = '';
+  $('e2').textContent = '';
+  const h = $('phHint');
+  h.hidden = !rec.hasPhone;
+  if(rec.hasPhone) h.textContent = 'يوجد رقم مسجّل (' + rec.phone + ')، سيتم استبداله بالرقم الجديد.';
+  setMode('ok');
+  show('s2');
+}
+
+function setMode(m){
+  mode = m;
+  $('mOk').classList.toggle('on', m === 'ok');
+  $('mErr').classList.toggle('on', m === 'err');
+  const edit = m === 'err';
+  $('fid').readOnly = !edit;
+  $('idHint').hidden = !edit;
+  if(!edit) $('fid').value = cur.id;
+}
+
+async function send(){
+  const e = $('e2'); e.textContent = '';
+  const phone = dg($('phone').value), notes = $('notes').value.trim();
+  if(!/^01[0125]\d{8}$/.test(phone)){ e.textContent = 'رقم التليفون غير صحيح (مثال: 01012345678)'; return; }
+  const p = { row: cur.row, token: cur.token, phone, notes, changed: false };
+  if(mode === 'err'){
+    const id = dg($('fid').value);
+    if(!/^[23]\d{13}$/.test(id)){ e.textContent = 'الرقم القومي يجب أن يكون 14 رقمًا صحيحًا'; return; }
+    if(id !== cur.id){ p.changed = true; p.id = id; }
+    else if(!notes){ e.textContent = 'عدّل الرقم القومي أو اكتب ملاحظة بالخطأ الموجود.'; return; }
+  }
+  const b = $('send'); b.disabled = true; b.textContent = 'جارٍ الإرسال...';
+  try{
+    const j = await (await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(p) })).json();
+    if(!j.ok){ e.textContent = j.error || 'حدث خطأ'; return; }
+    if(j.changed){
+      $('okT').textContent = 'تم استلام طلب تصحيح الرقم القومي';
+      $('okP').textContent = 'سيتم مراجعته واعتماده من الإدارة. رقم تليفونك المسجّل: ' + phone;
+    }else if(j.noted){
+      $('okT').textContent = 'تم تسجيل رقم تليفونك وملاحظتك';
+      $('okP').textContent = 'ستراجع الإدارة ملاحظتك. رقمك المسجّل: ' + phone;
+    }else{
+      $('okT').textContent = 'تم تسجيل رقم تليفونك';
+      $('okP').textContent = 'شكرًا لك. رقمك المسجّل: ' + phone;
+    }
+    show('s3');
+  }catch(x){ e.textContent = 'تعذّر الإرسال، حاول مرة أخرى.'; }
+  finally{ b.disabled = false; b.textContent = 'إرسال'; }
+}
+
+function reset(){ $('q').value=''; $('list').innerHTML=''; $('e1').textContent=''; cur=null; vrec=null; show('s1'); }
+
+$('go').onclick = search;
+$('q').addEventListener('keydown', e => { if(e.key === 'Enter') search(); });
+$('vgo').onclick = verify;
+$('vback').onclick = reset;
+$('mOk').onclick = () => setMode('ok');
+$('mErr').onclick = () => setMode('err');
+$('send').onclick = send;
+$('back').onclick = reset;
+$('again').onclick = reset;
+</script>
+</body>
+</html>
